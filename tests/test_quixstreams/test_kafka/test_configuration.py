@@ -125,6 +125,41 @@ class TestConnectionConfig:
         assert "blah" not in print_cfg
         assert "****" in print_cfg
 
+    @pytest.mark.parametrize(
+        "field, librdkafka_name",
+        [
+            ("sasl_password", "sasl.password"),
+            ("sasl_oauthbearer_client_secret", "sasl.oauthbearer.client.secret"),
+            ("ssl_key_password", "ssl.key.password"),
+            ("ssl_key_pem", "ssl.key.pem"),
+            ("ssl_ca_pem", "ssl.ca.pem"),
+            ("ssl_keystore_password", "ssl.keystore.password"),
+        ],
+    )
+    def test_secret_fields_are_obscured_in_str_and_repr(self, field, librdkafka_name):
+        secret = "-----BEGIN PRIVATE KEY-----\nTOPSECRET\n-----END PRIVATE KEY-----"
+        config = ConnectionConfig(bootstrap_servers="url", **{field: secret})
+
+        for text in (str(config), repr(config), f"{config!r}"):
+            assert "TOPSECRET" not in text
+        assert "****" in str(config)
+        # The value is still available to librdkafka and to the caller
+        assert getattr(config, field).get_secret_value() == secret
+        assert config.as_librdkafka_dict()[librdkafka_name] == secret
+        assert (
+            config.as_librdkafka_dict(plaintext_secrets=False)[librdkafka_name]
+            != secret
+        )
+
+    def test_ssl_key_pem_from_librdkafka_dict(self):
+        pem = "-----BEGIN PRIVATE KEY-----\nTOPSECRET\n-----END PRIVATE KEY-----"
+        config = ConnectionConfig.from_librdkafka_dict(
+            {"bootstrap.servers": "url", "ssl.key.pem": pem}
+        )
+
+        assert "TOPSECRET" not in str(config)
+        assert config.as_librdkafka_dict()["ssl.key.pem"] == pem
+
     def test_as_librdkafka_dict(self):
         config = ConnectionConfig(bootstrap_servers="url", sasl_mechanism="PLAIN")
         librdkafka_dict = config.as_librdkafka_dict()

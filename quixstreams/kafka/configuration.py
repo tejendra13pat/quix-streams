@@ -79,7 +79,7 @@ class ConnectionConfig(BaseSettings):
     ssl_sigalgs_list: Optional[str] = None
     ssl_key_location: Optional[str] = None
     ssl_key_password: Optional[SecretStr] = None
-    ssl_key_pem: Optional[str] = None
+    ssl_key_pem: Optional[SecretStr] = None
     ssl_certificate_location: Optional[str] = None
     ssl_certificate_pem: Optional[str] = None
     ssl_ca_location: Optional[str] = None
