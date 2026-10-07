@@ -99,7 +99,7 @@ class InfluxDB3Source(Source):
         database: str,
         key_setter: Optional[Callable[[object], object]] = None,
         timestamp_setter: Optional[Callable[[object], int]] = None,
-        start_date: datetime = datetime.now(tz=timezone.utc),
+        start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         measurements: Optional[Union[str, list[str]]] = None,
         measurement_column_name: str = "_measurement_name",
@@ -121,7 +121,8 @@ class InfluxDB3Source(Source):
             By default, will set the key to the measurement's name.
         :param timestamp_setter: sets the kafka message timestamp for a measurement record.
             By default, the timestamp will be the Kafka default (Kafka produce time).
-        :param start_date: The start datetime for querying InfluxDB. Uses current time by default.
+        :param start_date: The start datetime for querying InfluxDB.
+            Uses the current time (when the source is created) by default.
         :param end_date: The end datetime for querying InfluxDB.
             If none provided, runs indefinitely for a single measurement.
         :param measurements: The measurements to query. If None, all measurements will be processed.
@@ -164,7 +165,7 @@ class InfluxDB3Source(Source):
         self._timestamp_setter = timestamp_setter
         self._measurements = measurements
         self._sql_query = _set_sql_query(sql_query or "")
-        self._start_date = start_date
+        self._start_date = start_date or datetime.now(tz=timezone.utc)
         self._end_date = end_date
         self._time_delta_seconds = _interval_to_seconds(time_delta)
         self._delay = delay
